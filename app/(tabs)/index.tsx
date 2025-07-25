@@ -1,75 +1,344 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import { Colors } from "@/constants/Colors";
+import { useDebounce } from "@/hooks/useDebounce";
+import useFetchQuery from "@/hooks/useFetchQuery";
+import { PostType, ResponseGetPostSchema } from "@/schemas/postSchema";
+import { useEffect, useState } from "react";
+import {
+  FlatList,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
 export default function HomeScreen() {
+  const [page, setPage] = useState(1);
+  const [debouncedSearch, setSearch, search] = useDebounce("", 500);
+  const [allPosts, setAllPosts] = useState<PostType[]>([]);
+
+  const colorScheme = useColorScheme();
+  const currentColors = Colors[colorScheme ?? "light"];
+
+  const {
+    data: resData,
+    isLoading,
+    isFetching,
+    isRefetching,
+    refetch,
+    error,
+  } = useFetchQuery(
+    ["posts", page, debouncedSearch],
+    debouncedSearch.length > 0
+      ? "https://dummyjson.com/posts/search"
+      : "https://dummyjson.com/posts",
+    ResponseGetPostSchema,
+    {
+      params: {
+        limit: 20,
+        skip: (page - 1) * 20,
+        q: debouncedSearch,
+      },
+    }
+  );
+
+  useEffect(() => {
+    if (resData && resData.posts.length > 0) {
+      setAllPosts((prevPosts) => {
+        const existingIds = new Set(prevPosts.map((post) => post.id));
+        const uniqueNewPosts = resData.posts.filter(
+          (post) => !existingIds.has(post.id)
+        );
+        return [...prevPosts, ...uniqueNewPosts];
+      });
+    }
+  }, [resData]);
+
+  const handleLoadMore = () => {
+    if (!isLoading && !isFetching && resData && resData.posts.length > 0) {
+      setPage((prevPage) => prevPage + 1);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!isLoading && !isRefetching) {
+      setPage(1);
+
+      const result = await refetch();
+      if (result.data) {
+        setAllPosts(result.data.posts);
+      }
+    }
+  };
+
+  const renderFooter = () => {
+    if (!isLoading && !isFetching) return null;
+    return <SkeletonLoader />;
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
+    <SafeAreaView style={{ height: "100%" }}>
+      <ThemedView
+        darkColor="#000"
+        lightColor="#dddddd"
+        style={[
+          styles.outerContainer,
+          { paddingTop: Platform.OS === "android" ? 24 : 0 },
+        ]}
+      >
+        <ThemedText
+          type="title"
+          style={{ fontSize: 20, paddingHorizontal: 12, paddingTop: 12 }}
+        >
+          Dashboard
         </ThemedText>
+
+        <ThemedView style={styles.searchBarContainer}>
+          <TextInput
+            style={[styles.searchInput, { color: currentColors.text }]}
+            placeholder="Search something..."
+            placeholderTextColor="#888"
+            value={search}
+            onChangeText={(text) => {
+              setPage(1);
+              setAllPosts([]);
+              setSearch(text);
+            }}
+          />
+          <IconSymbol name="magnifyingglass" size={20} color={"#888"} />
+        </ThemedView>
+
+        {error ? (
+          <>
+            <ThemedText>Error: {error.message}</ThemedText>
+          </>
+        ) : isLoading && page === 1 ? (
+          <>
+            <SkeletonLoader />
+            <SkeletonLoader />
+            <SkeletonLoader />
+            <SkeletonLoader />
+          </>
+        ) : (
+          <FlatList
+            data={allPosts}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => <PostItem post={item} />}
+            contentContainerStyle={styles.listContent}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
+            ListFooterComponentStyle={{ height: 120, marginBottom: 64 }}
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+          />
+        )}
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    </SafeAreaView>
   );
 }
 
+const SkeletonLoader = () => {
+  return (
+    <ThemedView
+      skeleton={true}
+      style={[styles.postItem, styles.skeletonContainer, { marginVertical: 0 }]}
+    >
+      <ThemedView
+        skeleton={true}
+        type="secondary"
+        style={styles.skeletonTitle}
+      />
+      <ThemedView
+        skeleton={true}
+        type="secondary"
+        style={styles.skeletonBodyLine}
+      />
+      <ThemedView
+        skeleton={true}
+        type="secondary"
+        style={styles.skeletonBodyLine}
+      />
+    </ThemedView>
+  );
+};
+const PostItem = ({ post }: { post: PostType }) => {
+  const colorScheme = useColorScheme();
+  const currentColors = Colors[colorScheme ?? "light"];
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const toggleExpand = () => {
+    setIsExpanded((prev) => !prev);
+  };
+
+  return (
+    <ThemedView style={styles.postItem}>
+      <ThemedView style={styles.messageContainer}>
+        <View style={[styles.interactItem, { marginBottom: 8 }]}>
+          <IconSymbol
+            name="person.crop.circle.fill"
+            size={20}
+            color={"#bbbbbb"}
+          />
+
+          <ThemedText variant="secondary" style={styles.body}>
+            User {post.userId}
+          </ThemedText>
+        </View>
+
+        <ThemedText type="title" style={styles.title}>
+          {post.title}
+        </ThemedText>
+
+        <ThemedText
+          style={styles.body}
+          numberOfLines={isExpanded ? undefined : 3}
+        >
+          {post.body}
+        </ThemedText>
+
+        {post.body.length > 100 && (
+          <TouchableOpacity onPress={toggleExpand}>
+            <ThemedText
+              variant="secondary"
+              style={{
+                marginTop: 4,
+                fontSize: 14,
+              }}
+            >
+              {isExpanded ? "Show less" : "Read more"}
+            </ThemedText>
+          </TouchableOpacity>
+        )}
+      </ThemedView>
+
+      <ThemedView
+        style={[styles.interaction, { borderTopColor: currentColors.border }]}
+      >
+        <View style={styles.interactItem}>
+          <TouchableOpacity>
+            <IconSymbol name="heart" size={24} color={"#bbbbbb"} />
+          </TouchableOpacity>
+
+          <ThemedText>{post.reactions.likes}</ThemedText>
+        </View>
+
+        <TouchableOpacity>
+          <IconSymbol name="message.fill" size={24} color={"#bbbbbb"} />
+        </TouchableOpacity>
+
+        <TouchableOpacity>
+          <IconSymbol
+            name="arrowshape.turn.up.right.fill"
+            size={24}
+            color={"#bbbbbb"}
+          />
+        </TouchableOpacity>
+      </ThemedView>
+    </ThemedView>
+  );
+};
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  interactItem: {
+    display: "flex",
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
   },
-  stepContainer: {
-    gap: 8,
+  outerContainer: {
+    height: "100%",
+    display: "flex",
+    gap: 12,
+    flexDirection: "column",
+  },
+  listContent: {
+    display: "flex",
+    gap: 12,
+    paddingHorizontal: 12,
+    flexDirection: "column",
+  },
+  title: {
     marginBottom: 8,
+    fontSize: 18,
+    lineHeight: 28,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  body: {
+    fontSize: 14,
+  },
+  postItem: {
+    borderRadius: 12,
+  },
+  interaction: {
+    borderTopWidth: 1,
+    padding: 12,
+    borderBottomEndRadius: 12,
+    borderBottomStartRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  messageContainer: {
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    backgroundColor: "transparent",
+    padding: 16,
+  },
+  footerLoading: {
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderColor: "#CED0CE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  initialLoadingContainer: {
+    flex: 1,
+    padding: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  skeletonContainer: {
+    padding: 16,
+    display: "flex",
+    gap: 12,
+    margin: 12,
+    borderRadius: 12,
+    justifyContent: "center",
+  },
+  skeletonTitle: {
+    height: 20,
+    width: "70%",
+    borderRadius: 4,
+  },
+  skeletonBodyLine: {
+    height: 20,
+    borderRadius: 4,
+  },
+  footerSkeletonContainer: {
+    paddingVertical: 12,
+  },
+  searchBarContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 100,
+    marginHorizontal: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
   },
 });
