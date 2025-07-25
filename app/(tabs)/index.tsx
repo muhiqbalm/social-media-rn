@@ -2,13 +2,12 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/authContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import useFetchQuery from "@/hooks/useFetchQuery";
 import { PostType, ResponseGetPostSchema } from "@/schemas/postSchema";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { useAuth } from "@/contexts/authContext";
+import { useEffect, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -17,7 +16,7 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 
 export default function HomeScreen() {
@@ -28,6 +27,10 @@ export default function HomeScreen() {
 
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? "light"];
+
+  const [page, setPage] = useState(1);
+  const [debouncedSearch, setSearch, search] = useDebounce("", 1000);
+  const [allPosts, setAllPosts] = useState<PostType[]>([]);
 
   const {
     data: resData,
@@ -139,7 +142,6 @@ export default function HomeScreen() {
             placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
             value={search}
             onChangeText={(text) => {
-              setPage(1);
               setAllPosts([]);
               setSearch(text);
             }}
@@ -196,7 +198,8 @@ const PostItem = ({
     setIsExpanded((prev) => !prev);
   };
 
-  const displayName = post.userId === 1 ? user?.username ?? "You" : `User ${post.userId}`;
+  const displayName =
+    post.userId === 1 ? user?.username ?? "You" : `User ${post.userId}`;
 
   return (
     <ThemedView style={[styles.postItem, isNewPost && styles.newPostHighlight]}>
@@ -223,16 +226,16 @@ const PostItem = ({
           </ThemedText>
         </View>
 
-          <ThemedText type="title" style={styles.title}>
-            {post.title}
-          </ThemedText>
+        <ThemedText type="title" style={styles.title}>
+          {post.title}
+        </ThemedText>
 
-          <ThemedText
-            style={styles.body}
-            numberOfLines={isExpanded ? undefined : 3}
-          >
-            {post.body}
-          </ThemedText>
+        <ThemedText
+          style={styles.body}
+          numberOfLines={isExpanded ? undefined : 3}
+        >
+          {post.body}
+        </ThemedText>
 
         {post.body.length > 100 && (
           <TouchableOpacity onPress={toggleExpand}>
