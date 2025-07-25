@@ -62,13 +62,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profilpost-detail"
+        name="new-post"
         options={{
-          title: "Post Detail",
+          title: "Post",
           tabBarIcon: ({ color }) => (
             <IconSymbol
               size={28}
-              name="person.crop.circle.fill"
+              name="plus.circle.fill"
               color={color}
             />
           ),
