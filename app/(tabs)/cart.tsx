@@ -1,8 +1,9 @@
 // CART (FAZA)
 
 import { ThemedText } from "@/components/ThemedText";
-import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import { CartItem } from "@/contexts/cartContext";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,9 +12,9 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  View
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // URLs for API endpoints
 const PRODUCTS_URL = "https://dummyjson.com/products";
@@ -30,9 +31,6 @@ interface Product {
   stock: number;
 }
 
-interface CartItem extends Product {
-  quantity: number;
-}
 
 interface ApiResponse {
   products: Product[];
@@ -55,7 +53,7 @@ export default function PostDetail() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get<ApiResponse>(`${PRODUCTS_URL}?limit=20`);
+      const response = await axios.get<ApiResponse>(`${USER_CART_URL}?limit=20`);
       setProducts(response.data.products);
       setError(null);
     } catch (err) {
@@ -223,17 +221,9 @@ export default function PostDetail() {
 
       <View style={styles.content}>
         {/* Products Section */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Available Products</Text>
-          <FlatList
-            data={products}
-            renderItem={renderProduct}
-            keyExtractor={(item) => item.id.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.productsList}
-          />
-        </View>
+        </View> */}
 
         {/* Cart Section */}
         <View style={styles.section}>
