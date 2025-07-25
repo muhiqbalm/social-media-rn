@@ -44,6 +44,8 @@ const MAPPING = {
   plus: "add",
   "stroller.fill": "stroller",
   "cube.box.fill": "gif-box",
+  "rectangle.portrait.and.arrow.right": "logout",
+  pencil: "edit",
 } as IconMapping;
 
 /**

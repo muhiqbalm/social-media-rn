@@ -51,31 +51,11 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="post-detail"
-        options={{
-          title: "Post Detail",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="message.fill" color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
         name="marketplace"
         options={{
           title: "Marketplace",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="storefront.fill" color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="product-detail"
-        options={{
-          title: "Product Detail",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="cube.box.fill" color={color} />
           ),
         }}
       />
@@ -100,6 +80,15 @@ export default function TabLayout() {
               name="person.crop.circle.fill"
               color={color}
             />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="new-post"
+        options={{
+          title: "Post",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="plus.circle.fill" color={color} />
           ),
         }}
       />

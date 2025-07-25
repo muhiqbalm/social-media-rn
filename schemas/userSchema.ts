@@ -21,7 +21,7 @@ export const UserDetailSchema = z.object({
     color: z.string(),
     type: z.string(),
   }),
-  domain: z.string(),
+  domain: z.string().optional(),
   ip: z.string(),
   address: z.object({
     address: z.string(),
