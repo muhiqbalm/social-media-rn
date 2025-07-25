@@ -205,11 +205,7 @@ export default function ProductDetails() {
           </ThemedView>
 
           {/* Product Information */}
-          <ThemedView
-            style={styles.productInfo}
-            lightColor="#fff"
-            darkColor="#1c1c1e"
-          >
+          <ThemedView style={styles.productInfo}>
             <ThemedText type="title" style={styles.productTitle}>
               {product.title}
             </ThemedText>

@@ -5,6 +5,7 @@ import { Colors } from "@/constants/Colors";
 import { useDebounce } from "@/hooks/useDebounce";
 import useFetchQuery from "@/hooks/useFetchQuery";
 import { ProductType, ResponseGetProductSchema } from "@/schemas/productSchema";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,6 +15,7 @@ import {
   SafeAreaView,
   StyleSheet,
   TextInput,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
@@ -22,6 +24,7 @@ export default function MarketplaceScreen() {
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? "light"];
 
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [allProducts, setAllProducts] = useState<ProductType[]>([]);
   const [debouncedSearch, setSearch, search] = useDebounce("", 800);
@@ -85,12 +88,22 @@ export default function MarketplaceScreen() {
   };
 
   const renderItem = ({ item }: { item: ProductType }) => (
-    <ThemedView style={styles.card}>
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: currentColors.background }]}
+      onPress={() => handleToDetail(item.id)}
+    >
       <Image source={{ uri: item.thumbnail }} style={styles.image} />
       <ThemedText style={styles.title}>{item.title}</ThemedText>
       <ThemedText style={styles.price}>${item.price}</ThemedText>
-    </ThemedView>
+    </TouchableOpacity>
   );
+
+  const handleToDetail = (id: number) => {
+    router.push({
+      pathname: "/products/[id]",
+      params: { id: id.toString() },
+    });
+  };
 
   const renderFooter = () => {
     if (!isLoading && !isFetching) return null;

@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/authContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import useFetchQuery from "@/hooks/useFetchQuery";
 import { PostType, ResponseGetPostSchema } from "@/schemas/postSchema";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   FlatList,
@@ -27,10 +27,6 @@ export default function HomeScreen() {
 
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? "light"];
-
-  const [page, setPage] = useState(1);
-  const [debouncedSearch, setSearch, search] = useDebounce("", 1000);
-  const [allPosts, setAllPosts] = useState<PostType[]>([]);
 
   const {
     data: resData,
@@ -111,6 +107,11 @@ export default function HomeScreen() {
   const renderFooter = () => {
     if (!isLoading && !isFetching) return null;
     return <SkeletonLoader />;
+  };
+
+  const router = useRouter();
+  const handleToDetailPost = (postId: number) => {
+    router.push({ pathname: "/posts/[id]", params: { id: String(postId) } });
   };
 
   return (

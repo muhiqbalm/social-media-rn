@@ -5,7 +5,10 @@ import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
 import useFetchQuery from "@/hooks/useFetchQuery";
-import { CommentsResponseSchema, PostDetailSchema } from "@/schemas/postDetailSchemas";
+import {
+  CommentsResponseSchema,
+  PostDetailSchema,
+} from "@/schemas/postDetailSchemas";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -16,7 +19,7 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -55,7 +58,6 @@ interface CommentResponse {
   limit: number;
 }
 
-
 export default function PostDetail() {
   const [newComment, setNewComment] = useState("");
   const [comments, setComments] = useState<CommentType[]>([]);
@@ -63,7 +65,8 @@ export default function PostDetail() {
   const [likesCount, setLikesCount] = useState(0);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  const { postId } = useLocalSearchParams();
+  const { id } = useLocalSearchParams();
+  const postId = String(id);
 
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? "light"];
@@ -79,7 +82,6 @@ export default function PostDetail() {
     PostDetailSchema,
     {}
   );
-
 
   // Fetch comments
   const {
@@ -117,21 +119,21 @@ export default function PostDetail() {
     try {
       // Update post with new likes count via DummyJSON API
       const response = await fetch(`https://dummyjson.com/posts/${postId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reactions: {
             likes: newLikesCount,
-            dislikes: postData?.reactions?.dislikes || 0
-          }
-        })
+            dislikes: postData?.reactions?.dislikes || 0,
+          },
+        }),
       });
 
       if (response.ok) {
         const updatedPost = await response.json();
         // Update with server response to ensure consistency
         setLikesCount(updatedPost.reactions?.likes || newLikesCount);
-        console.log('Post updated successfully:', updatedPost);
+        console.log("Post updated successfully:", updatedPost);
       } else {
         // Revert optimistic update on failure
         setIsLiked(!newIsLiked);
@@ -143,7 +145,7 @@ export default function PostDetail() {
       setIsLiked(!newIsLiked);
       setLikesCount(likesCount);
       Alert.alert("Error", "Network error occurred while updating like");
-      console.error('Error updating like:', error);
+      console.error("Error updating like:", error);
     }
   };
 
@@ -154,21 +156,21 @@ export default function PostDetail() {
 
     try {
       // DummyJSON API call for adding comment
-      const response = await fetch('https://dummyjson.com/comments/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("https://dummyjson.com/comments/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           body: newComment,
           postId: postId,
           userId: 1, // You'd get this from your auth context
-        })
+        }),
       });
 
       if (response.ok) {
         const newCommentData = await response.json();
 
         // Add the new comment to the local state
-        setComments(prev => [newCommentData, ...prev]);
+        setComments((prev) => [newCommentData, ...prev]);
         setNewComment("");
         Alert.alert("Success", "Comment added successfully!");
       } else {
@@ -185,8 +187,10 @@ export default function PostDetail() {
     // Alert.alert("Share", "Share functionality would be implemented here");
     try {
       const shareContent = {
-        title: postData?.title || 'Check out this post!',
-        message: `${postData?.title || 'Check out this post!'}\n\n${postData?.body || ''}\n\n${postData?.tags?.map(tag => `#${tag}`).join(' ') || ''}`,
+        title: postData?.title || "Check out this post!",
+        message: `${postData?.title || "Check out this post!"}\n\n${
+          postData?.body || ""
+        }\n\n${postData?.tags?.map((tag) => `#${tag}`).join(" ") || ""}`,
         url: `https://yourapp.com/posts/${postId}`, // Optional: replace with your app's deep link
       };
 
@@ -195,41 +199,37 @@ export default function PostDetail() {
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
           // shared with activity type of result.activityType
-          console.log('Shared via:', result.activityType);
+          console.log("Shared via:", result.activityType);
         } else {
           // shared
-          console.log('Content shared successfully');
+          console.log("Content shared successfully");
         }
       } else if (result.action === Share.dismissedAction) {
         // dismissed
-        console.log('Share dialog dismissed');
+        console.log("Share dialog dismissed");
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to share content');
-      console.error('Share error:', error);
+      Alert.alert("Error", "Failed to share content");
+      console.error("Share error:", error);
     }
   };
 
   const handleBack = () => {
-    router.push("/(tabs)/");
+    router.push("/(tabs)");
   };
 
   const renderComment = ({ item }: { item: CommentType }) => (
     <ThemedView style={styles.commentItem}>
       <View style={styles.commentHeader}>
-        <IconSymbol
-          name="person.crop.circle.fill"
-          size={32}
-          color="#bbbbbb"
-        />
+        <IconSymbol name="person.crop.circle.fill" size={32} color="#bbbbbb" />
         <View style={styles.commentContent}>
           <ThemedView style={styles.commentBubble}>
             <ThemedText type="defaultSemiBold" style={styles.commentAuthor}>
-              {item.user?.fullName || item.user?.username || `User ${item.user?.id}`}
+              {item.user?.fullName ||
+                item.user?.username ||
+                `User ${item.user?.id}`}
             </ThemedText>
-            <ThemedText style={styles.commentText}>
-              {item.body}
-            </ThemedText>
+            <ThemedText style={styles.commentText}>{item.body}</ThemedText>
           </ThemedView>
 
           <View style={styles.commentActions}>
@@ -284,8 +284,15 @@ export default function PostDetail() {
               {/* Post Header */}
               <ThemedView style={styles.postHeader}>
                 <View style={styles.headerLeft}>
-                  <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <IconSymbol name="chevron.left" size={24} color={currentColors.text} />
+                  <TouchableOpacity
+                    onPress={handleBack}
+                    style={styles.backButton}
+                  >
+                    <IconSymbol
+                      name="chevron.left"
+                      size={24}
+                      color={currentColors.text}
+                    />
                   </TouchableOpacity>
                   <View style={styles.authorInfo}>
                     <IconSymbol
@@ -314,9 +321,7 @@ export default function PostDetail() {
                 <ThemedText style={styles.postText}>
                   {postData.title}
                 </ThemedText>
-                <ThemedText style={styles.postBody}>
-                  {postData.body}
-                </ThemedText>
+                <ThemedText style={styles.postBody}>{postData.body}</ThemedText>
 
                 {/* Tags */}
                 {postData.tags && postData.tags.length > 0 && (
@@ -357,7 +362,15 @@ export default function PostDetail() {
               </ThemedView>
 
               {/* Action Buttons */}
-              <ThemedView style={[styles.actionButtons, { borderTopColor: currentColors.border, borderBottomColor: currentColors.border }]}>
+              <ThemedView
+                style={[
+                  styles.actionButtons,
+                  {
+                    borderTopColor: currentColors.border,
+                    borderBottomColor: currentColors.border,
+                  },
+                ]}
+              >
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={handleLike}
@@ -382,8 +395,15 @@ export default function PostDetail() {
                   </ThemedText>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-                  <IconSymbol name="arrowshape.turn.up.right" size={24} color="#bbbbbb" />
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleShare}
+                >
+                  <IconSymbol
+                    name="arrowshape.turn.up.right"
+                    size={24}
+                    color="#bbbbbb"
+                  />
                   <ThemedText variant="secondary" style={styles.actionText}>
                     Share
                   </ThemedText>
@@ -399,7 +419,13 @@ export default function PostDetail() {
                 />
                 <View style={styles.commentInputWrapper}>
                   <TextInput
-                    style={[styles.commentInput, { color: currentColors.text, backgroundColor: currentColors.secondaryBg }]}
+                    style={[
+                      styles.commentInput,
+                      {
+                        color: currentColors.text,
+                        backgroundColor: currentColors.secondaryBg,
+                      },
+                    ]}
                     placeholder="Write a comment..."
                     placeholderTextColor="#888"
                     value={newComment}
@@ -411,13 +437,18 @@ export default function PostDetail() {
                     disabled={!newComment.trim() || isSubmittingComment}
                     style={[
                       styles.sendButton,
-                      (!newComment.trim() || isSubmittingComment) && styles.sendButtonDisabled
+                      (!newComment.trim() || isSubmittingComment) &&
+                        styles.sendButtonDisabled,
                     ]}
                   >
                     <IconSymbol
                       name="paperplane.fill"
                       size={16}
-                      color={(!newComment.trim() || isSubmittingComment) ? "#ccc" : "#007AFF"}
+                      color={
+                        !newComment.trim() || isSubmittingComment
+                          ? "#ccc"
+                          : "#007AFF"
+                      }
                     />
                   </TouchableOpacity>
                 </View>
@@ -425,9 +456,7 @@ export default function PostDetail() {
 
               {/* Comments Header */}
               <ThemedView style={styles.commentsHeader}>
-                <ThemedText type="defaultSemiBold">
-                  Most relevant ▼
-                </ThemedText>
+                <ThemedText type="defaultSemiBold">Most relevant ▼</ThemedText>
               </ThemedView>
             </View>
           }
@@ -472,7 +501,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     marginBottom: 8,
-    fontWeight: 800
+    fontWeight: 800,
   },
   postBody: {
     fontSize: 16,
