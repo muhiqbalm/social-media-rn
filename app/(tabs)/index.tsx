@@ -7,6 +7,8 @@ import useFetchQuery from "@/hooks/useFetchQuery";
 import { PostType, ResponseGetPostSchema } from "@/schemas/postSchema";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useAuth } from "@/contexts/authContext";
 import {
   FlatList,
   Platform,
@@ -22,6 +24,7 @@ export default function HomeScreen() {
   const [page, setPage] = useState(1);
   const [debouncedSearch, setSearch, search] = useDebounce("", 500);
   const [allPosts, setAllPosts] = useState<PostType[]>([]);
+  const params = useLocalSearchParams();
 
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? "light"];
@@ -49,16 +52,42 @@ export default function HomeScreen() {
   );
 
   useEffect(() => {
+    if (params.newPost && typeof params.newPost === "string") {
+      try {
+        const newPost: PostType = JSON.parse(params.newPost);
+        setAllPosts((prevPosts) => {
+          const existingIds = new Set(prevPosts.map((post) => post.id));
+          if (!existingIds.has(newPost.id)) {
+            return [newPost, ...prevPosts];
+          }
+          return prevPosts;
+        });
+      } catch (error) {
+        console.error("Error parsing new post:", error);
+      }
+    }
+  }, [params.newPost]);
+
+  useEffect(() => {
     if (resData && resData.posts.length > 0) {
       setAllPosts((prevPosts) => {
+        const hasNewPost =
+          prevPosts.length > 0 &&
+          !resData.posts.some((post) => post.id === prevPosts[0].id);
+
         const existingIds = new Set(prevPosts.map((post) => post.id));
         const uniqueNewPosts = resData.posts.filter(
           (post) => !existingIds.has(post.id)
         );
-        return [...prevPosts, ...uniqueNewPosts];
+
+        if (hasNewPost && page === 1) {
+          return [prevPosts[0], ...uniqueNewPosts];
+        } else {
+          return [...prevPosts, ...uniqueNewPosts];
+        }
       });
     }
-  }, [resData]);
+  }, [resData, page]);
 
   const handleLoadMore = () => {
     if (!isLoading && !isFetching && resData && resData.posts.length > 0) {
@@ -69,7 +98,6 @@ export default function HomeScreen() {
   const handleRefresh = async () => {
     if (!isLoading && !isRefetching) {
       setPage(1);
-
       const result = await refetch();
       if (result.data) {
         setAllPosts(result.data.posts);
@@ -99,11 +127,16 @@ export default function HomeScreen() {
           Dashboard
         </ThemedText>
 
-        <ThemedView style={styles.searchBarContainer}>
+        <ThemedView
+          style={[
+            styles.searchBarContainer,
+            { backgroundColor: currentColors.background },
+          ]}
+        >
           <TextInput
             style={[styles.searchInput, { color: currentColors.text }]}
             placeholder="Search something..."
-            placeholderTextColor="#888"
+            placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
             value={search}
             onChangeText={(text) => {
               setPage(1);
@@ -115,10 +148,8 @@ export default function HomeScreen() {
         </ThemedView>
 
         {error ? (
-          <>
-            <ThemedText>Error: {error.message}</ThemedText>
-          </>
-        ) : isLoading && page === 1 ? (
+          <ThemedText>Error: {error.message}</ThemedText>
+        ) : isLoading && page === 1 && allPosts.length === 0 ? (
           <>
             <SkeletonLoader />
             <SkeletonLoader />
@@ -129,7 +160,12 @@ export default function HomeScreen() {
           <FlatList
             data={allPosts}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => <PostItem post={item} />}
+            renderItem={({ item, index }) => (
+              <PostItem
+                post={item}
+                isNewPost={index === 0 && params.newPost ? true : false}
+              />
+            )}
             contentContainerStyle={styles.listContent}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
@@ -144,67 +180,48 @@ export default function HomeScreen() {
   );
 }
 
-const SkeletonLoader = () => {
-  return (
-    <ThemedView
-      skeleton={true}
-      style={[styles.postItem, styles.skeletonContainer, { marginVertical: 0 }]}
-    >
-      <ThemedView
-        skeleton={true}
-        type="secondary"
-        style={styles.skeletonTitle}
-      />
-      <ThemedView
-        skeleton={true}
-        type="secondary"
-        style={styles.skeletonBodyLine}
-      />
-      <ThemedView
-        skeleton={true}
-        type="secondary"
-        style={styles.skeletonBodyLine}
-      />
-    </ThemedView>
-  );
-};
-
-const PostItem = ({ post }: { post: PostType }) => {
+const PostItem = ({
+  post,
+  isNewPost = false,
+}: {
+  post: PostType;
+  isNewPost?: boolean;
+}) => {
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? "light"];
   const [isExpanded, setIsExpanded] = useState(false);
+  const { user } = useAuth();
 
   const toggleExpand = () => {
     setIsExpanded((prev) => !prev);
   };
 
-
-  const handleToDetailPost = (postId: number) => {
-    // If using Expo Router:
-    router.push({
-      pathname: '/(tabs)/post-detail',
-      params: { postId: postId.toString() }
-    });
-  }
+  const displayName = post.userId === 1 ? user?.username ?? "You" : `User ${post.userId}`;
 
   return (
-    <ThemedView style={styles.postItem}>
-      <TouchableOpacity
-        onPress={() => handleToDetailPost(post.id)}
-        activeOpacity={0.95}
-      >
-        <ThemedView style={styles.messageContainer}>
-          <View style={[styles.interactItem, { marginBottom: 8 }]}>
-            <IconSymbol
-              name="person.crop.circle.fill"
-              size={20}
-              color={"#bbbbbb"}
-            />
+    <ThemedView style={[styles.postItem, isNewPost && styles.newPostHighlight]}>
+      {isNewPost && (
+        <View style={styles.newPostBadge}>
+          <ThemedText style={styles.newPostText}>✨ Your new post</ThemedText>
+        </View>
+      )}
 
-            <ThemedText variant="secondary" style={styles.body}>
-              User {post.userId}
-            </ThemedText>
-          </View>
+      <ThemedView
+        style={[
+          styles.messageContainer,
+          { backgroundColor: currentColors.background },
+        ]}
+      >
+        <View style={[styles.interactItem, { marginBottom: 8 }]}>
+          <IconSymbol
+            name="person.crop.circle.fill"
+            size={20}
+            color={"#bbbbbb"}
+          />
+          <ThemedText variant="secondary" style={styles.body}>
+            {displayName}
+          </ThemedText>
+        </View>
 
           <ThemedText type="title" style={styles.title}>
             {post.title}
@@ -217,26 +234,17 @@ const PostItem = ({ post }: { post: PostType }) => {
             {post.body}
           </ThemedText>
 
-          {post.body.length > 100 && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation(); // Prevent navigation when expanding text
-                toggleExpand();
-              }}
+        {post.body.length > 100 && (
+          <TouchableOpacity onPress={toggleExpand}>
+            <ThemedText
+              variant="secondary"
+              style={{ marginTop: 4, fontSize: 14 }}
             >
-              <ThemedText
-                variant="secondary"
-                style={{
-                  marginTop: 4,
-                  fontSize: 14,
-                }}
-              >
-                {isExpanded ? "Show less" : "Read more"}
-              </ThemedText>
-            </TouchableOpacity>
-          )}
-        </ThemedView>
-      </TouchableOpacity>
+              {isExpanded ? "Show less" : "Read more"}
+            </ThemedText>
+          </TouchableOpacity>
+        )}
+      </ThemedView>
 
       <ThemedView
         style={[styles.interaction, { borderTopColor: currentColors.border }]}
@@ -250,8 +258,7 @@ const PostItem = ({ post }: { post: PostType }) => {
           >
             <IconSymbol name="heart" size={24} color={"#bbbbbb"} />
           </TouchableOpacity>
-
-          <ThemedText>{post.reactions.likes}</ThemedText>
+          <ThemedText>{post.reactions?.likes || 0}</ThemedText>
         </View>
 
         <TouchableOpacity
@@ -276,6 +283,31 @@ const PostItem = ({ post }: { post: PostType }) => {
           />
         </TouchableOpacity>
       </ThemedView>
+    </ThemedView>
+  );
+};
+
+const SkeletonLoader = () => {
+  return (
+    <ThemedView
+      skeleton={true}
+      style={[styles.postItem, styles.skeletonContainer, { marginVertical: 0 }]}
+    >
+      <ThemedView
+        skeleton={true}
+        type="secondary"
+        style={styles.skeletonTitle}
+      />
+      <ThemedView
+        skeleton={true}
+        type="secondary"
+        style={styles.skeletonBodyLine}
+      />
+      <ThemedView
+        skeleton={true}
+        type="secondary"
+        style={styles.skeletonBodyLine}
+      />
     </ThemedView>
   );
 };
@@ -310,6 +342,27 @@ const styles = StyleSheet.create({
   postItem: {
     borderRadius: 12,
   },
+  newPostHighlight: {
+    borderWidth: 2,
+    borderColor: "#007AFF",
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  newPostBadge: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  newPostText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
   interaction: {
     borderTopWidth: 1,
     padding: 12,
@@ -323,21 +376,8 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "column",
     width: "100%",
-    backgroundColor: "transparent",
     padding: 16,
-  },
-  footerLoading: {
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    borderColor: "#CED0CE",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  initialLoadingContainer: {
-    flex: 1,
-    padding: 12,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "transparent",
   },
   skeletonContainer: {
     padding: 16,
@@ -355,9 +395,6 @@ const styles = StyleSheet.create({
   skeletonBodyLine: {
     height: 20,
     borderRadius: 4,
-  },
-  footerSkeletonContainer: {
-    paddingVertical: 12,
   },
   searchBarContainer: {
     flexDirection: "row",
