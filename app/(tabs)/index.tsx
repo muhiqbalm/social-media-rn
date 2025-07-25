@@ -5,6 +5,7 @@ import { Colors } from "@/constants/Colors";
 import { useDebounce } from "@/hooks/useDebounce";
 import useFetchQuery from "@/hooks/useFetchQuery";
 import { PostType, ResponseGetPostSchema } from "@/schemas/postSchema";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   FlatList,
@@ -14,7 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  View,
+  View
 } from "react-native";
 
 export default function HomeScreen() {
@@ -167,6 +168,7 @@ const SkeletonLoader = () => {
     </ThemedView>
   );
 };
+
 const PostItem = ({ post }: { post: PostType }) => {
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? "light"];
@@ -176,63 +178,97 @@ const PostItem = ({ post }: { post: PostType }) => {
     setIsExpanded((prev) => !prev);
   };
 
+
+  const handleToDetailPost = (postId: number) => {
+    // If using Expo Router:
+    router.push({
+      pathname: '/(tabs)/post-detail',
+      params: { postId: postId.toString() }
+    });
+  }
+
   return (
     <ThemedView style={styles.postItem}>
-      <ThemedView style={styles.messageContainer}>
-        <View style={[styles.interactItem, { marginBottom: 8 }]}>
-          <IconSymbol
-            name="person.crop.circle.fill"
-            size={20}
-            color={"#bbbbbb"}
-          />
+      <TouchableOpacity
+        onPress={() => handleToDetailPost(post.id)}
+        activeOpacity={0.95}
+      >
+        <ThemedView style={styles.messageContainer}>
+          <View style={[styles.interactItem, { marginBottom: 8 }]}>
+            <IconSymbol
+              name="person.crop.circle.fill"
+              size={20}
+              color={"#bbbbbb"}
+            />
 
-          <ThemedText variant="secondary" style={styles.body}>
-            User {post.userId}
+            <ThemedText variant="secondary" style={styles.body}>
+              User {post.userId}
+            </ThemedText>
+          </View>
+
+          <ThemedText type="title" style={styles.title}>
+            {post.title}
           </ThemedText>
-        </View>
 
-        <ThemedText type="title" style={styles.title}>
-          {post.title}
-        </ThemedText>
+          <ThemedText
+            style={styles.body}
+            numberOfLines={isExpanded ? undefined : 3}
+          >
+            {post.body}
+          </ThemedText>
 
-        <ThemedText
-          style={styles.body}
-          numberOfLines={isExpanded ? undefined : 3}
-        >
-          {post.body}
-        </ThemedText>
-
-        {post.body.length > 100 && (
-          <TouchableOpacity onPress={toggleExpand}>
-            <ThemedText
-              variant="secondary"
-              style={{
-                marginTop: 4,
-                fontSize: 14,
+          {post.body.length > 100 && (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation(); // Prevent navigation when expanding text
+                toggleExpand();
               }}
             >
-              {isExpanded ? "Show less" : "Read more"}
-            </ThemedText>
-          </TouchableOpacity>
-        )}
-      </ThemedView>
+              <ThemedText
+                variant="secondary"
+                style={{
+                  marginTop: 4,
+                  fontSize: 14,
+                }}
+              >
+                {isExpanded ? "Show less" : "Read more"}
+              </ThemedText>
+            </TouchableOpacity>
+          )}
+        </ThemedView>
+      </TouchableOpacity>
 
       <ThemedView
         style={[styles.interaction, { borderTopColor: currentColors.border }]}
       >
         <View style={styles.interactItem}>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation(); // Prevent navigation when liking
+              // Handle like logic here
+            }}
+          >
             <IconSymbol name="heart" size={24} color={"#bbbbbb"} />
           </TouchableOpacity>
 
           <ThemedText>{post.reactions.likes}</ThemedText>
         </View>
 
-        <TouchableOpacity>
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation(); // Prevent navigation
+            handleToDetailPost(post.id); // Go to comments
+          }}
+        >
           <IconSymbol name="message.fill" size={24} color={"#bbbbbb"} />
         </TouchableOpacity>
 
-        <TouchableOpacity>
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation(); // Prevent navigation
+            // Handle share logic here
+          }}
+        >
           <IconSymbol
             name="arrowshape.turn.up.right.fill"
             size={24}
