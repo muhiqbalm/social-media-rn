@@ -39,15 +39,37 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="new-post"
+        options={{
+          title: "New Post",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="plus" color={color} />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="marketplace"
         options={{
           title: "Marketplace",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="storefront.fill" color={color} />
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="cart"
+        options={{
+          title: "Cart",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="cart.fill" color={color} />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="profile"
         options={{
@@ -66,11 +88,7 @@ export default function TabLayout() {
         options={{
           title: "Post",
           tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={28}
-              name="plus.circle.fill"
-              color={color}
-            />
+            <IconSymbol size={28} name="plus.circle.fill" color={color} />
           ),
         }}
       />

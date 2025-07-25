@@ -2,13 +2,12 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/authContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import useFetchQuery from "@/hooks/useFetchQuery";
 import { PostType, ResponseGetPostSchema } from "@/schemas/postSchema";
-import { router } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
-import { useAuth } from "@/contexts/authContext";
 import {
   FlatList,
   Platform,
@@ -17,7 +16,7 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 
 export default function HomeScreen() {
@@ -117,15 +116,15 @@ export default function HomeScreen() {
         lightColor="#dddddd"
         style={[
           styles.outerContainer,
-          { paddingTop: Platform.OS === "android" ? 24 : 0 },
+          { paddingTop: Platform.OS === "android" ? 36 : 0 },
         ]}
       >
-        <ThemedText
+        {/* <ThemedText
           type="title"
           style={{ fontSize: 20, paddingHorizontal: 12, paddingTop: 12 }}
         >
           Dashboard
-        </ThemedText>
+        </ThemedText> */}
 
         <ThemedView
           style={[
@@ -139,7 +138,6 @@ export default function HomeScreen() {
             placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
             value={search}
             onChangeText={(text) => {
-              setPage(1);
               setAllPosts([]);
               setSearch(text);
             }}
@@ -196,7 +194,13 @@ const PostItem = ({
     setIsExpanded((prev) => !prev);
   };
 
-  const displayName = post.userId === 1 ? user?.username ?? "You" : `User ${post.userId}`;
+  const router = useRouter();
+  const handleToDetailPost = (postId: number) => {
+    router.push({ pathname: "/posts/[id]", params: { id: String(postId) } });
+  };
+
+  const displayName =
+    post.userId === 1 ? user?.username ?? "You" : `User ${post.userId}`;
 
   return (
     <ThemedView style={[styles.postItem, isNewPost && styles.newPostHighlight]}>
@@ -223,16 +227,16 @@ const PostItem = ({
           </ThemedText>
         </View>
 
-          <ThemedText type="title" style={styles.title}>
-            {post.title}
-          </ThemedText>
+        <ThemedText type="title" style={styles.title}>
+          {post.title}
+        </ThemedText>
 
-          <ThemedText
-            style={styles.body}
-            numberOfLines={isExpanded ? undefined : 3}
-          >
-            {post.body}
-          </ThemedText>
+        <ThemedText
+          style={styles.body}
+          numberOfLines={isExpanded ? undefined : 3}
+        >
+          {post.body}
+        </ThemedText>
 
         {post.body.length > 100 && (
           <TouchableOpacity onPress={toggleExpand}>

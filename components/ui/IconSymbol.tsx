@@ -39,6 +39,13 @@ const MAPPING = {
   heart: "favorite-border",
   "message.fill": "comment",
   "arrowshape.turn.up.right.fill": "share",
+  "storefront.fill": "storefront",
+  "cart.fill": "shopping-cart",
+  plus: "add",
+  "stroller.fill": "stroller",
+  "cube.box.fill": "gif-box",
+  "rectangle.portrait.and.arrow.right": "logout",
+  pencil: "edit",
 } as IconMapping;
 
 /**

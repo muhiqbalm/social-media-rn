@@ -3,16 +3,17 @@ import {
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
+import axios from "axios";
 import z from "zod";
 
 /**
- * Hook untuk melakukan fetch data dengan react-query
+ * Hook untuk melakukan fetch data dengan react-query menggunakan Axios
  * @param key - Key untuk query
  * @param baseUrl - URL endpoint
+ * @param schema - Zod schema untuk validasi data
  * @param config - Optional configuration object
  * @returns hasil dari useQuery
  */
-
 type FetchQueryConfig<T> = {
   params?: Record<string, string | number | boolean>;
   options?: UseQueryOptions<T, Error>;
@@ -26,26 +27,17 @@ export default function useFetchQuery<T = any>(
 ): UseQueryResult<T, Error> {
   const { params = {}, options = {} } = config;
 
-  const fetchData = async () => {
+  const fetchData = async (): Promise<T> => {
     try {
-      const searchParams = new URLSearchParams(
-        Object.entries(params).reduce((acc, [k, v]) => {
-          acc[k] = String(v);
-          return acc;
-        }, {} as Record<string, string>)
-      ).toString();
+      const response = await axios.get(baseUrl, {
+        params,
+      });
 
-      const fullUrl = `${baseUrl}${searchParams ? `?${searchParams}` : ""}`;
-      const response = await fetch(fullUrl);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-
-      const data = await response.json();
-      return schema ? schema.parse(data) : data;
+      return schema.parse(response.data);
     } catch (err: any) {
-      throw new Error(err.message || "Client Side Error!");
+      const message =
+        err.response?.data?.message || err.message || "Client Side Error!";
+      throw new Error(message);
     }
   };
 
