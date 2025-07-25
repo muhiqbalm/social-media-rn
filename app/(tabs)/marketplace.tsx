@@ -9,7 +9,7 @@ import {
   Image,
   SafeAreaView,
   StyleSheet,
-  View
+  View,
 } from "react-native";
 
 const URL = "https://dummyjson.com/products";
@@ -50,7 +50,6 @@ export default function MarketplaceScreen() {
           <ThemedText>Loading products...</ThemedText>
         </ThemedView>
       </SafeAreaView>
-
     );
   }
 
@@ -68,7 +67,6 @@ export default function MarketplaceScreen() {
         />
       </ThemedView>
     </SafeAreaView>
-
   );
 }
 
@@ -78,7 +76,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "#fff",
   },
-
+  safeArea: { paddingTop: 64 },
   loadingContainer: {
     height: "100%",
     justifyContent: "center",
@@ -94,7 +92,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 16, // ✅ padding kanan kiri biar isi agak ke tengah
     paddingBottom: 20,
-    alignItems: "center",  // ✅ penting untuk center item ketika tidak full width
+    alignItems: "center", // ✅ penting untuk center item ketika tidak full width
   },
 
   row: {

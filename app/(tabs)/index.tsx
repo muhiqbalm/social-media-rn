@@ -117,15 +117,15 @@ export default function HomeScreen() {
         lightColor="#dddddd"
         style={[
           styles.outerContainer,
-          { paddingTop: Platform.OS === "android" ? 24 : 0 },
+          { paddingTop: Platform.OS === "android" ? 36 : 0 },
         ]}
       >
-        <ThemedText
+        {/* <ThemedText
           type="title"
           style={{ fontSize: 20, paddingHorizontal: 12, paddingTop: 12 }}
         >
           Dashboard
-        </ThemedText>
+        </ThemedText> */}
 
         <ThemedView
           style={[
