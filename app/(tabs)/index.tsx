@@ -109,11 +109,6 @@ export default function HomeScreen() {
     return <SkeletonLoader />;
   };
 
-  const router = useRouter();
-  const handleToDetailPost = (postId: number) => {
-    router.push({ pathname: "/posts/[id]", params: { id: String(postId) } });
-  };
-
   return (
     <SafeAreaView style={{ height: "100%" }}>
       <ThemedView
@@ -197,6 +192,11 @@ const PostItem = ({
 
   const toggleExpand = () => {
     setIsExpanded((prev) => !prev);
+  };
+
+  const router = useRouter();
+  const handleToDetailPost = (postId: number) => {
+    router.push({ pathname: "/posts/[id]", params: { id: String(postId) } });
   };
 
   const displayName =
