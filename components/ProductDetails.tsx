@@ -5,12 +5,14 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useCart } from "@/contexts/CartContext";
 
 const { width } = Dimensions.get("window");
 
@@ -49,6 +51,19 @@ export default function ProductDetails({
   const [error, setError] = useState("");
   // Current image index for carousel
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // Adding to cart state
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  // Cart context
+  const { addItem, state } = useCart();
+
+  // Check if item is already in cart
+  const isInCart = product
+    ? state.items.some((item) => item.id === product.id)
+    : false;
+  const cartItem = product
+    ? state.items.find((item) => item.id === product.id)
+    : null;
 
   // Fetch product details from API using axios
   const fetchProductDetails = async () => {
@@ -81,6 +96,74 @@ export default function ProductDetails({
     if (onBack) {
       onBack();
     }
+  };
+
+  // Handle add to cart
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    setIsAddingToCart(true);
+
+    // Simulate adding to cart delay
+    setTimeout(() => {
+      addItem({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        thumbnail: product.thumbnail,
+        discountPercentage: product.discountPercentage,
+        brand: product.brand,
+        stock: product.stock,
+      });
+
+      setIsAddingToCart(false);
+
+      Alert.alert(
+        "Added to Cart!",
+        `${product.title} has been added to your cart.`,
+        [{ text: "OK" }]
+      );
+    }, 500);
+  };
+
+  // Handle buy now (add to cart and show checkout option)
+  const handleBuyNow = async () => {
+    if (!product) return;
+
+    setIsAddingToCart(true);
+
+    // Add to cart first if not already there
+    if (!isInCart) {
+      addItem({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        thumbnail: product.thumbnail,
+        discountPercentage: product.discountPercentage,
+        brand: product.brand,
+        stock: product.stock,
+      });
+    }
+
+    setTimeout(() => {
+      setIsAddingToCart(false);
+
+      Alert.alert(
+        "Buy Now",
+        `${product.title} has been added to your cart. Would you like to proceed to checkout?`,
+        [
+          { text: "Continue Shopping", style: "cancel" },
+          {
+            text: "Go to Cart",
+            onPress: () => {
+              // Here you would navigate to cart
+              // For now, just show an alert
+              Alert.alert("Navigation", "Navigate to cart screen");
+            },
+          },
+        ]
+      );
+    }, 500);
   };
 
   // Format price with discount
@@ -273,6 +356,15 @@ export default function ProductDetails({
               </ThemedText>
             </ThemedView>
 
+            {/* Cart Status */}
+            {isInCart && cartItem && (
+              <ThemedView style={styles.cartStatusContainer}>
+                <ThemedText style={styles.cartStatusText}>
+                  ✓ {cartItem.quantity} in cart
+                </ThemedText>
+              </ThemedView>
+            )}
+
             {/* Category */}
             <ThemedText style={styles.categoryText}>
               Category: {product.category}
@@ -352,18 +444,41 @@ export default function ProductDetails({
           darkColor="#1c1c1e"
         >
           <TouchableOpacity
-            style={[styles.contactButton, { backgroundColor: "#6b7280" }]}
+            style={[
+              styles.addToCartButton,
+              (product.stock <= 0 || isAddingToCart) && styles.buttonDisabled,
+              isInCart && styles.addToCartButtonInCart,
+            ]}
+            onPress={handleAddToCart}
+            disabled={product.stock <= 0 || isAddingToCart}
           >
             <ThemedText
-              style={styles.contactButtonText}
-              lightColor="#fff"
-              darkColor="#fff"
+              style={[
+                styles.addToCartButtonText,
+                isInCart && styles.addToCartButtonTextInCart,
+              ]}
+              lightColor={isInCart ? "#059669" : "#6b7280"}
+              darkColor={isInCart ? "#059669" : "#6b7280"}
             >
-              Contact Seller
+              {isAddingToCart
+                ? "Adding..."
+                : isInCart
+                ? "✓ In Cart"
+                : "Add to Cart"}
             </ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.buyButton}>
-            <ThemedText style={styles.buyButtonText}>Buy Now</ThemedText>
+
+          <TouchableOpacity
+            style={[
+              styles.buyButton,
+              (product.stock <= 0 || isAddingToCart) && styles.buttonDisabled,
+            ]}
+            onPress={handleBuyNow}
+            disabled={product.stock <= 0 || isAddingToCart}
+          >
+            <ThemedText style={styles.buyButtonText}>
+              {isAddingToCart ? "Processing..." : "Buy Now"}
+            </ThemedText>
           </TouchableOpacity>
         </ThemedView>
       </ThemedView>
@@ -537,6 +652,20 @@ const styles = StyleSheet.create({
   outOfStock: {
     color: "#dc2626",
   },
+  cartStatusContainer: {
+    backgroundColor: "#f0fdf4",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+  },
+  cartStatusText: {
+    color: "#059669",
+    fontSize: 14,
+    fontWeight: "600",
+  },
   categoryText: {
     fontSize: 14,
     color: "#6b7280",
@@ -589,15 +718,25 @@ const styles = StyleSheet.create({
     borderTopColor: "#e5e7eb",
     gap: 12,
   },
-  contactButton: {
+  addToCartButton: {
     flex: 1,
+    backgroundColor: "#f3f4f6",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  contactButtonText: {
+  addToCartButtonInCart: {
+    backgroundColor: "#f0fdf4",
+    borderColor: "#bbf7d0",
+  },
+  addToCartButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  addToCartButtonTextInCart: {
+    color: "#059669",
   },
   buyButton: {
     flex: 1,
@@ -610,5 +749,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#fff",
+  },
+  buttonDisabled: {
+    backgroundColor: "#e5e7eb",
+    opacity: 0.6,
   },
 });
